@@ -1,0 +1,63 @@
+# Скопируй в config.toml и правь под себя.
+# config.toml игнорируется git, этот файл — эталон.
+
+[audio]
+# Имя источника PipeWire. "auto" — взять источник по умолчанию.
+# Посмотреть варианты: pactl list short sources
+# Или запустить scripts/check_mic.sh — он подскажет готовую строку.
+source = "auto"
+sample_rate = 16000
+# Предохранитель: запись жёстко обрывается через столько секунд.
+max_seconds = 300
+# Битрейт Opus для выгрузки. 24k хватает для речи 16 кГц.
+opus_bitrate = "24k"
+
+[hotkey]
+# Клавиша-триггер. Варианты: ctrl_r, alt_r, super_r, f13
+key = "ctrl_r"
+# Дольше этого порога (мс) — push-to-talk (пишем, пока держишь).
+# Короче — tap-toggle (нажал-говоришь-нажал).
+hold_threshold_ms = 400
+
+[stt]
+model = "gpt-transcribe"
+# Языки, которые могут встретиться в записи. Смешение ru+en — норма.
+languages = ["ru", "en"]
+prompt = "Разработчик диктует инструкции AI-агенту в терминале. Разговорная русская речь с англицизмами и техническим сленгом."
+timeout_s = 30
+retries = 2
+
+[cleanup]
+# false — выключить вычитку принудительно, даже если ключ DeepSeek есть.
+# Если ключа нет, шаг выключается сам, это штатный режим.
+enabled = true
+model = "deepseek-chat"
+base_url = "https://api.deepseek.com"
+timeout_s = 6
+
+[session]
+# Сколько минут диктовки считаются продолжением одной мысли.
+timeout_min = 10
+# Автоматически ставить пробел/заглавную на стыке с предыдущей вставкой.
+smart_join = true
+
+[inject]
+# Как вставлять: "clipboard" (надёжно) или "type" (посимвольно, запасной).
+method = "clipboard"
+# Окна, которым шлём Ctrl+Shift+V вместо Ctrl+V (терминалы).
+# Сравнение по вхождению и без учёта регистра: "gnome-terminal" поймает и
+# "Gnome-terminal", и "gnome-terminal-server". Класс своего окна посмотреть
+# можно так:  xprop WM_CLASS
+terminal_classes = [
+    "gnome-terminal", "konsole", "kitty", "alacritty", "wezterm",
+    "xterm", "terminator", "ghostty", "tilix", "xfce4-terminal",
+]
+
+[ui]
+beep = true
+# Семейство шрифта в окне правки. Пусто — системный текстовый шрифт.
+# Например: "DejaVu Sans", "Cantarell", "Noto Sans".
+font_family = ""
+font_size = 15
+width = 720
+height = 300

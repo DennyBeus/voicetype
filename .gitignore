@@ -1,0 +1,23 @@
+# Секреты — всегда первыми.
+.env
+.env.local
+*.key
+*.pem
+
+# Окружение
+.venv/
+__pycache__/
+*.py[cod]
+
+# Личные настройки (эталоны лежат рядом как *.example)
+config.toml
+keywords.txt
+
+# Аудио
+*.wav
+*.ogg
+*.opus
+*.mp3
+
+# Состояние демона
+.state/

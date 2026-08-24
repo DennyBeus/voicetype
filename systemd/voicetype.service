@@ -1,0 +1,22 @@
+[Unit]
+Description=voicetype — голосовой ввод в терминал
+# graphical-session.target нужен, чтобы демон видел X-сессию, если ты его
+# запустил. Автозапуска это НЕ включает: unit никогда не enable-ится.
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Projects/develop/voicetype
+EnvironmentFile=-%h/Projects/develop/voicetype/.env
+ExecStart=%h/Projects/develop/voicetype/.venv/bin/python -m voicetype
+Restart=on-failure
+RestartSec=3
+# Перезапуск после падения — не автозапуск при загрузке. Демон поднимается
+# только командой `voicetype start`.
+
+[Install]
+WantedBy=graphical-session.target
+# Секция [Install] нужна лишь для того, чтобы автозапуск можно было включить
+# вручную, если когда-нибудь захочется:  systemctl --user enable voicetype
+# install.sh этого не делает намеренно.

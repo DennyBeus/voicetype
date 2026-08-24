@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Управление демоном voicetype.
+#
+#   voicetype start | stop | restart | status | logs | run | check
+#
+# Автозапуска при загрузке машины нет и не появится сам по себе: unit
+# существует, но не enable-ится. Демон поднимается только этой командой.
+set -uo pipefail
+
+PROJECT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+UNIT=voicetype.service
+PY="$PROJECT/.venv/bin/python"
+
+have_unit() { systemctl --user cat "$UNIT" >/dev/null 2>&1; }
+running() { systemctl --user is-active --quiet "$UNIT"; }
+
+need_venv() {
+    [ -x "$PY" ] && return 0
+    echo "нет окружения — запусти сначала:  $PROJECT/install.sh" >&2
+    exit 1
+}
+
+cmd_start() {
+    need_venv
+    if ! have_unit; then
+        echo "unit не установлен — запусти $PROJECT/install.sh" >&2
+        exit 1
+    fi
+    systemctl --user start "$UNIT" || exit 1
+    sleep 1
+    if running; then
+        echo "voicetype запущен"
+        cmd_status
+    else
+        echo "не поднялся, смотри логи:  voicetype logs" >&2
+        systemctl --user status "$UNIT" --no-pager --lines=15
+        exit 1
+    fi
+}
+
+cmd_stop() {
+    systemctl --user stop "$UNIT" 2>/dev/null
+    echo "voicetype остановлен"
+}
+
+cmd_status() {
+    if running; then
+        since=$(systemctl --user show "$UNIT" -p ActiveEnterTimestamp --value)
+        echo "состояние:  запущен (с $since)"
+    else
+        echo "состояние:  не запущен"
+    fi
+
+    state="$PROJECT/.state/status.json"
+    if running && [ -f "$state" ]; then
+        "$PY" - "$state" <<'PYEOF'
+import json, sys
+d = json.load(open(sys.argv[1]))
+print(f"клавиша:    {d.get('hotkey')}")
+print(f"микрофон:   {d.get('source')}")
+print(f"модель STT: {d.get('stt_model')}")
+print(f"вычитка:    {d.get('cleanup')}")
+print(f"терминов:   {d.get('keywords')}")
+PYEOF
+    elif [ -x "$PY" ]; then
+        (cd "$PROJECT" && "$PY" -m voicetype --check)
+    fi
+
+    if systemctl --user is-enabled --quiet "$UNIT" 2>/dev/null; then
+        echo "автозапуск: ВКЛЮЧЁН (systemctl --user disable $UNIT — выключить)"
+    else
+        echo "автозапуск: выключен"
+    fi
+}
+
+cmd_logs() { journalctl --user -u "$UNIT" -f -n 50 --no-hostname; }
+
+cmd_run() {
+    need_venv
+    cd "$PROJECT" || exit 1
+    [ -f .env ] && set -a && . ./.env && set +a
+    exec "$PY" -m voicetype "$@"
+}
+
+cmd_check() {
+    need_venv
+    cd "$PROJECT" || exit 1
+    [ -f .env ] && set -a && . ./.env && set +a
+    exec "$PY" -m voicetype --check
+}
+
+case "${1:-}" in
+    start)   cmd_start ;;
+    stop)    cmd_stop ;;
+    restart) cmd_stop; cmd_start ;;
+    status)  cmd_status ;;
+    logs)    cmd_logs ;;
+    check)   cmd_check ;;
+    run)     shift; cmd_run "$@" ;;
+    *)
+        sed -n '3,8p' "$0" | sed 's/^# \?//'
+        exit 2 ;;
+esac

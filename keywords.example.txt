@@ -1,0 +1,74 @@
+# Термины, которые модель должна расслышать и написать именно так.
+# Одна строка — один термин. Пустые строки и строки с # игнорируются.
+# Скопируй в keywords.txt и дополняй под себя.
+
+# git
+git
+rebase
+squash
+cherry-pick
+merge
+pull request
+force push
+stash
+HEAD
+origin
+main
+checkout
+commit
+diff
+
+# контейнеры и инфра
+docker
+docker compose
+Dockerfile
+kubectl
+Kubernetes
+k8s
+namespace
+pod
+deployment
+Helm
+Terraform
+nginx
+systemd
+journalctl
+
+# языки и рантаймы
+Python
+TypeScript
+Node.js
+npm
+pnpm
+uv
+venv
+pip
+async
+await
+PostgreSQL
+Redis
+SQLite
+
+# AI-инструменты
+Claude Code
+Anthropic
+OpenAI
+DeepSeek
+LLM
+prompt
+API
+endpoint
+token
+
+# общие технические
+refactor
+рефакторинг
+деплой
+мёрж
+коммит
+пул-реквест
+бранч
+билд
+CI
+CD
+линтер
