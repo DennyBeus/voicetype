@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Управление демоном voicetype.
 #
-#   voicetype start | stop | restart | status | logs | run | check
+#   voicetype start | stop | restart | status | logs | history [N] | run | check
 #
 # Автозапуска при загрузке машины нет и не появится сам по себе: unit
 # существует, но не enable-ится. Демон поднимается только этой командой.
@@ -75,6 +75,13 @@ PYEOF
 
 cmd_logs() { journalctl --user -u "$UNIT" -f -n 50 --no-hostname; }
 
+# Последние диктовки — если вставка не дошла, текст берётся отсюда.
+cmd_history() {
+    need_venv
+    cd "$PROJECT" || exit 1
+    exec "$PY" -m voicetype --history "${1:-5}"
+}
+
 cmd_run() {
     need_venv
     cd "$PROJECT" || exit 1
@@ -95,6 +102,7 @@ case "${1:-}" in
     restart) cmd_stop; cmd_start ;;
     status)  cmd_status ;;
     logs)    cmd_logs ;;
+    history) shift; cmd_history "$@" ;;
     check)   cmd_check ;;
     run)     shift; cmd_run "$@" ;;
     *)

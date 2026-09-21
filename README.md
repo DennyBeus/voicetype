@@ -141,8 +141,15 @@ Check the microphone, then start:
 ./bin/voicetype restart   # after editing config.toml or keywords.txt
 ./bin/voicetype status    # what is configured, and is it running
 ./bin/voicetype logs      # live log
+./bin/voicetype history   # recent dictations (history 20 for the last 20)
 ./bin/voicetype run       # foreground, for debugging
 ```
+
+**If a paste gets lost.** Every transcript is written to `.state/history.jsonl`
+right after recognition, before the review window opens. The final text after
+editing is logged too, marked as inserted or failed.
+`voicetype history` prints the recent entries so you can copy the text back.
+The file is owner-only (`0600`), ignored by git, and keeps the last 500 entries.
 
 Worth adding to `~/.bashrc`:
 

@@ -29,6 +29,7 @@ from pathlib import Path
 
 from . import config
 from .cleanup import Cleaner
+from .history import History, format_entries
 from .hotkey import HotkeyError, HotkeyListener
 from .inject import Injector
 from . import recorder as recorder_mod
@@ -43,6 +44,7 @@ log = logging.getLogger("voicetype")
 ROOT = Path(__file__).resolve().parent.parent
 STATE_DIR = ROOT / ".state"
 STATUS_FILE = STATE_DIR / "status.json"
+HISTORY_FILE = STATE_DIR / "history.jsonl"
 
 
 class Daemon:
@@ -57,6 +59,7 @@ class Daemon:
         self.window = ReviewWindow(self.root, cfg.ui)
         self.injector = Injector(cfg.inject, self.root)
         self.sessions = SessionStore(cfg.session)
+        self.history = History(HISTORY_FILE)
         self.recorder = Recorder(cfg.audio)
         self.stt = Transcriber(cfg.stt, cfg.openai_key, cfg.keywords)
         self.cleaner = Cleaner(
@@ -169,6 +172,8 @@ class Daemon:
                 self._fail("ничего не распознано — тишина или слишком тихо")
                 return
             raw = text
+            # До вычитки и окна: дальше может случиться что угодно.
+            self.history.record("transcript", raw, window=self._target_name())
 
             result = self.cleaner.clean(text, previous)
             self._post(
@@ -211,12 +216,20 @@ class Daemon:
         try:
             self.injector.paste(to_insert, target)
         except Exception as exc:  # noqa: BLE001
+            self.history.record("failed", to_insert, window=self._target_name(),
+                                error=str(exc))
             self._fail(f"не удалось вставить текст: {exc}")
             return
+
+        # Итог после правки в окне — он может отличаться от расшифровки.
+        self.history.record("inserted", to_insert, window=self._target_name())
 
         if target is not None:
             self.sessions.record(target.window_id, to_insert)
         log.info("вставлено %s символов", len(to_insert))
+
+    def _target_name(self) -> str:
+        return repr(self._target) if self._target is not None else ""
 
     def _fail(self, message: str) -> None:
         log.error(message)
@@ -271,8 +284,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="voicetype", description=__doc__)
     parser.add_argument("--check", action="store_true",
                         help="проверить конфигурацию и выйти")
+    parser.add_argument("--history", type=int, metavar="N", nargs="?", const=5,
+                        help="показать последние N записей истории диктовок и выйти")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
+
+    if args.history is not None:
+        entries = History(HISTORY_FILE).last(args.history)
+        print(format_entries(entries) if entries else f"история пуста: {HISTORY_FILE}")
+        return 0
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
