@@ -24,6 +24,12 @@ PASTE_SETTLE_S = 0.5
 # фокус не мгновенно, а клавиши уйдут туда, где фокус на момент отправки.
 FOCUS_SETTLE_S = 0.15
 
+# Отдельный список: добавляется и к старым config.toml, где terminal_classes
+# уже задан. Совпадение точное, иначе «code» поймает посторонние приложения.
+TERMINAL_EDITOR_CLASSES = (
+    "code", "code-oss", "code - insiders", "vscodium", "cursor", "windsurf",
+)
+
 
 class InjectError(RuntimeError):
     pass
@@ -47,8 +53,20 @@ class Target:
 class Injector:
     def __init__(self, cfg: dict, tk_root):
         self.method = cfg.get("method", "clipboard")
+        if self.method not in {"clipboard", "type"}:
+            raise InjectError(f"неизвестный inject.method: {self.method!r}")
+        self.paste_shortcut = cfg.get("paste_shortcut", "auto")
+        if self.paste_shortcut not in {"auto", "ctrl+v", "ctrl+shift+v"}:
+            raise InjectError(
+                "inject.paste_shortcut должен быть auto, ctrl+v или ctrl+shift+v"
+            )
         self.terminal_classes = {
-            c.lower() for c in cfg.get("terminal_classes", [])
+            c.strip().lower() for c in cfg.get("terminal_classes", []) if c.strip()
+        }
+        self.terminal_editor_classes = {
+            c.strip().lower()
+            for c in cfg.get("terminal_editor_classes", TERMINAL_EDITOR_CLASSES)
+            if c.strip()
         }
         self._tk = tk_root
         self._d = display.Display()
@@ -86,12 +104,14 @@ class Injector:
         Сравниваем по вхождению, а не по равенству: один и тот же терминал
         зовётся то `Gnome-terminal`, то `gnome-terminal-server`, то
         `org.wezfurlong.wezterm` — точный список тут не собрать.
+        IDE сопоставляем точно: их класс относится ко всему окну,
+        включая встроенный терминал.
         """
         cls = wm_class.lower()
         if not cls:
             return False
-        return any(
-            known == cls or known in cls or cls in known
+        return cls in self.terminal_editor_classes or any(
+            known in cls
             for known in self.terminal_classes
         )
 
@@ -119,6 +139,8 @@ class Injector:
         """
         if not text:
             return
+        if target is None:
+            raise InjectError("целевое окно неизвестно — повтори диктовку из нужного окна")
         if self.method == "type":
             self._focus(target)
             self._type(text)
@@ -128,9 +150,13 @@ class Injector:
         self._clipboard_set(text)
         self._focus(target)
 
+        shortcut = self.paste_shortcut
+        if shortcut == "auto":
+            shortcut = "ctrl+shift+v" if target.is_terminal else "ctrl+v"
         combo = [self._kc_ctrl]
-        if target is not None and target.is_terminal:
+        if shortcut == "ctrl+shift+v":
             combo.append(self._kc_shift)
+        log.info("вставка в %r: %s", target, shortcut)
 
         def send_keys() -> None:
             try:

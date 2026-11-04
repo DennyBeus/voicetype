@@ -194,6 +194,44 @@ Your clipboard is left alone while the window is open, so `Ctrl+V` pastes what
 *you* copied. The tool takes the clipboard only for the instant of pasting and
 puts your content straight back.
 
+### Codex CLI and integrated terminals
+
+Focus the Codex CLI prompt, dictate, review, and press Enter in the review
+window. VoiceType pastes text; press Enter in the terminal separately to submit.
+
+Sending `Ctrl+V` directly to Codex can invoke image paste and produce
+`Failed to paste image: clipboard unavailable` or an X11 connection timeout.
+The terminal should handle text paste via `Ctrl+Shift+V`. This also works when
+Codex runs remotely: the local terminal sends the text to the remote session.
+See [VS Code terminal paste](https://code.visualstudio.com/docs/terminal/basics#_copy-paste)
+and [Codex image inputs](https://learn.chatgpt.com/docs/image-inputs?surface=cli).
+
+Automatic detection now includes VS Code, Code OSS, Code Insiders, VSCodium,
+Cursor, and Windsurf. These IDE windows receive `Ctrl+Shift+V`, like known
+standalone terminals. Other applications retain `Ctrl+V`. Existing
+`config.toml` files inherit the new IDE defaults without replacing your
+`terminal_classes` list. Restart after updating: `./bin/voicetype restart`.
+
+The IDE match uses the whole window's `WM_CLASS`; VoiceType cannot distinguish
+an editor pane from an integrated terminal. Keep the terminal focused when
+dictating into an IDE. For normal editor paste, set `terminal_editor_classes = []`
+under `[inject]`. IDE classes use exact, case-insensitive matches; find your
+class with `xprop WM_CLASS`.
+
+For custom keyboard bindings, override automatic detection:
+
+```toml
+[inject]
+method = "clipboard"
+paste_shortcut = "ctrl+shift+v" # auto (default), ctrl+shift+v, or ctrl+v
+```
+
+The override applies to every target window in clipboard mode. Check that your
+terminal binds it to text paste. Invalid method/shortcut settings fail at startup.
+If the original window cannot be identified, insertion stops with an error;
+recover the text with `./bin/voicetype history` and repeat from the target window.
+Logs include the target class and selected shortcut, without the text.
+
 ### Continuing a dictation
 
 Dictate, press Enter, the text is in your terminal. Remember something else?
@@ -227,6 +265,10 @@ languages = ["ru", "en"] # mixed speech stops being transliterated
 
 [cleanup]
 enabled = true           # false disables DeepSeek even if a key is present
+
+[inject]
+paste_shortcut = "auto"   # terminal/IDE: Ctrl+Shift+V; other windows: Ctrl+V
+# terminal_editor_classes = [] # disable terminal shortcuts for IDE windows
 
 [ui]
 font_family = ""         # empty = system font
@@ -285,8 +327,37 @@ uv run python -m voicetype.cleanup --text "ну ээ ребейз"  # cleanup on
 - **Ugly, unreadable font** — Tk was built without fontconfig. Install
   `python3-tk` and re-run `bash install.sh`; it picks the better interpreter
   automatically.
-- **Text pastes into the wrong window** — the terminal list for `Ctrl+Shift+V`
-  is `[inject].terminal_classes`; find your window's class with `xprop WM_CLASS`.
+- **Codex reports `Failed to paste image`** — verify the text paste shortcut.
+  IDE classes are in `[inject].terminal_editor_classes`; standalone terminals
+  are in `[inject].terminal_classes`. For an unrecognized terminal, set
+  `paste_shortcut = "ctrl+shift+v"` and restart.
+- **Text pastes into the wrong window** — start dictation with the intended
+  window focused. Check the target and shortcut in `./bin/voicetype logs`.
+
+## Tests
+
+```bash
+uv pip install --python .venv/bin/python -e '.[test]'
+.venv/bin/python -m pytest --cov=voicetype.inject --cov-report=term-missing
+```
+
+Tests cover terminal/IDE/browser shortcut selection, overrides, old configuration
+merging, clipboard restoration, missing targets, and the typing fallback. X11
+tests use a disposable Xvfb display to exercise real XTEST events and Unicode
+clipboard transfers between Tk clients. A real `xfce4-terminal` test checks
+UTF-8 bracketed paste with multiline text and no extra submit key.
+
+For all integration tests on Ubuntu, install the optional test tools:
+
+```bash
+sudo apt install xvfb xfce4-terminal xfwm4 dbus-x11
+.venv/bin/python -m pytest
+```
+
+Missing system test tools cause the corresponding tests to be skipped. Run
+`.venv/bin/python -m pytest -m 'not x11'` for unit tests only. Tests do not call
+transcription APIs, record audio, or use your desktop windows. Live dictation
+inside Codex requires a manual check with your terminal and keyboard bindings.
 
 ## Uninstalling
 

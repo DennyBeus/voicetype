@@ -44,6 +44,9 @@ smart_join = true
 [inject]
 # Как вставлять: "clipboard" (надёжно) или "type" (посимвольно, запасной).
 method = "clipboard"
+# auto — Ctrl+Shift+V для терминалов и IDE ниже, Ctrl+V для остальных окон.
+# Можно задать явно: "ctrl+shift+v" или "ctrl+v" (для своих привязок клавиш).
+paste_shortcut = "auto"
 # Окна, которым шлём Ctrl+Shift+V вместо Ctrl+V (терминалы).
 # Сравнение по вхождению и без учёта регистра: "gnome-terminal" поймает и
 # "Gnome-terminal", и "gnome-terminal-server". Класс своего окна посмотреть
@@ -51,6 +54,13 @@ method = "clipboard"
 terminal_classes = [
     "gnome-terminal", "konsole", "kitty", "alacritty", "wezterm",
     "xterm", "terminator", "ghostty", "tilix", "xfce4-terminal",
+]
+# IDE со встроенным терминалом: точное совпадение WM_CLASS без учёта регистра.
+# В Codex CLI Ctrl+V вызывает вставку картинки; текст вставляет сам терминал
+# через Ctrl+Shift+V. Перед диктовкой поставь курсор во встроенный терминал.
+# Класс относится ко всему окну IDE, включая редактор. [] отключает этот список.
+terminal_editor_classes = [
+    "code", "code-oss", "code - insiders", "vscodium", "cursor", "windsurf",
 ]
 
 [ui]

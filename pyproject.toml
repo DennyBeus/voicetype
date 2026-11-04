@@ -8,6 +8,13 @@ dependencies = [
     "python-xlib>=0.33",
 ]
 
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "pytest-cov>=5,<8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["x11: integration tests requiring a disposable X11 display"]
+
 [project.scripts]
 voicetype = "voicetype.__main__:main"
 

@@ -31,7 +31,7 @@ from . import config
 from .cleanup import Cleaner
 from .history import History, format_entries
 from .hotkey import HotkeyError, HotkeyListener
-from .inject import Injector
+from .inject import InjectError, Injector
 from . import recorder as recorder_mod
 from .recorder import Recorder, RecorderError
 from .session import SessionStore
@@ -321,7 +321,7 @@ def main() -> int:
 
     try:
         daemon = Daemon(cfg)
-    except (HotkeyError, SttError) as exc:
+    except (HotkeyError, InjectError, SttError) as exc:
         log.error("%s", exc)
         return 1
     return daemon.run()
