@@ -51,6 +51,7 @@ def make_injector(monkeypatch):
 @pytest.mark.parametrize("wm_class", [
     "Gnome-terminal", "gnome-terminal-server", "Code", "code-oss",
     "Code - Insiders", "VSCodium", "Cursor", "Windsurf",
+    "com.microsoft.VSCode", "com.microsoft.vscode",
 ])
 def test_terminal_and_ide_paste_does_not_send_codex_image_shortcut(make_injector, wm_class):
     injector, loop = make_injector()
@@ -68,7 +69,10 @@ def test_terminal_and_ide_paste_does_not_send_codex_image_shortcut(make_injector
     assert loop.text == "original clipboard"
 
 
-@pytest.mark.parametrize("wm_class", ["firefox", "Gedit", "my-code-browser", "", "term"])
+@pytest.mark.parametrize("wm_class", [
+    "firefox", "Gedit", "my-code-browser", "", "term",
+    "com.microsoft.vscode-browser", "other.com.microsoft.vscode",
+])
 def test_ordinary_windows_keep_ctrl_v(make_injector, wm_class):
     injector, loop = make_injector()
     target = Target(42, wm_class, injector._is_terminal(wm_class))
@@ -93,6 +97,7 @@ def test_explicit_shortcut_overrides_detection(make_injector, shortcut, terminal
 def test_ide_detection_can_be_disabled_for_editor_use(make_injector):
     injector, _ = make_injector({"terminal_editor_classes": []})
     assert not injector._is_terminal("code")
+    assert not injector._is_terminal("com.microsoft.VSCode")
 
 
 def test_custom_ide_class_is_matched_exactly(make_injector):

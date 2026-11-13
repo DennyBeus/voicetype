@@ -60,7 +60,8 @@ terminal_classes = [
 # через Ctrl+Shift+V. Перед диктовкой поставь курсор во встроенный терминал.
 # Класс относится ко всему окну IDE, включая редактор. [] отключает этот список.
 terminal_editor_classes = [
-    "code", "code-oss", "code - insiders", "vscodium", "cursor", "windsurf",
+    "code", "com.microsoft.vscode", "code-oss", "code - insiders",
+    "vscodium", "cursor", "windsurf",
 ]
 
 [ui]

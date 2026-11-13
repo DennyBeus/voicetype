@@ -201,13 +201,14 @@ window. VoiceType pastes text; press Enter in the terminal separately to submit.
 
 Sending `Ctrl+V` directly to Codex can invoke image paste and produce
 `Failed to paste image: clipboard unavailable` or an X11 connection timeout.
-The terminal should handle text paste via `Ctrl+Shift+V`. This also works when
-Codex runs remotely: the local terminal sends the text to the remote session.
+The terminal should handle text paste via `Ctrl+Shift+V`. This also works inside
+tmux and when Codex runs remotely: the local terminal sends the text to the session.
 See [VS Code terminal paste](https://code.visualstudio.com/docs/terminal/basics#_copy-paste)
 and [Codex image inputs](https://learn.chatgpt.com/docs/image-inputs?surface=cli).
 
 Automatic detection now includes VS Code, Code OSS, Code Insiders, VSCodium,
-Cursor, and Windsurf. These IDE windows receive `Ctrl+Shift+V`, like known
+Cursor, and Windsurf, including VS Code's `com.microsoft.VSCode` window class.
+These IDE windows receive `Ctrl+Shift+V`, like known
 standalone terminals. Other applications retain `Ctrl+V`. Existing
 `config.toml` files inherit the new IDE defaults without replacing your
 `terminal_classes` list. Restart after updating: `./bin/voicetype restart`.
@@ -329,7 +330,9 @@ uv run python -m voicetype.cleanup --text "ну ээ ребейз"  # cleanup on
   automatically.
 - **Codex reports `Failed to paste image`** — verify the text paste shortcut.
   IDE classes are in `[inject].terminal_editor_classes`; standalone terminals
-  are in `[inject].terminal_classes`. For an unrecognized terminal, set
+  are in `[inject].terminal_classes`. Older releases missed the
+  `com.microsoft.VSCode` class and sent `Ctrl+V`; update and restart VoiceType.
+  For an unrecognized terminal, set
   `paste_shortcut = "ctrl+shift+v"` and restart.
 - **Text pastes into the wrong window** — start dictation with the intended
   window focused. Check the target and shortcut in `./bin/voicetype logs`.
@@ -344,13 +347,14 @@ uv pip install --python .venv/bin/python -e '.[test]'
 Tests cover terminal/IDE/browser shortcut selection, overrides, old configuration
 merging, clipboard restoration, missing targets, and the typing fallback. X11
 tests use a disposable Xvfb display to exercise real XTEST events and Unicode
-clipboard transfers between Tk clients. A real `xfce4-terminal` test checks
-UTF-8 bracketed paste with multiline text and no extra submit key.
+clipboard transfers between Tk clients, including the `com.microsoft.VSCode`
+class. Real `xfce4-terminal` tests check UTF-8 bracketed paste with multiline
+text and no extra submit key, directly and through an isolated tmux session.
 
 For all integration tests on Ubuntu, install the optional test tools:
 
 ```bash
-sudo apt install xvfb xfce4-terminal xfwm4 dbus-x11
+sudo apt install xvfb xfce4-terminal xfwm4 dbus-x11 tmux
 .venv/bin/python -m pytest
 ```
 

@@ -203,12 +203,13 @@ enable-ится: `systemctl --user is-enabled voicetype` отвечает `linke
 Если отправить `Ctrl+V` напрямую в Codex, он может запустить вставку картинки
 и показать `Failed to paste image: clipboard unavailable` или ошибку таймаута
 подключения к X11. Текст должен вставлять сам терминал по `Ctrl+Shift+V`.
-Это работает и с Codex на удалённой машине: локальный терминал передаёт текст
-в удалённую сессию. Источники: [вставка в терминале VS Code](https://code.visualstudio.com/docs/terminal/basics#_copy-paste),
+Это работает и внутри tmux, и с Codex на удалённой машине: локальный терминал
+передаёт текст в сессию. Источники: [вставка в терминале VS Code](https://code.visualstudio.com/docs/terminal/basics#_copy-paste),
 [работа с изображениями в Codex](https://learn.chatgpt.com/docs/image-inputs?surface=cli).
 
 Автоопределение теперь учитывает VS Code, Code OSS, Code Insiders, VSCodium,
-Cursor и Windsurf. В эти окна отправляется `Ctrl+Shift+V`, как в известные
+Cursor и Windsurf, включая класс окна VS Code `com.microsoft.VSCode`.
+В эти окна отправляется `Ctrl+Shift+V`, как в известные
 отдельные терминалы. В остальные приложения по-прежнему отправляется `Ctrl+V`.
 Существующий `config.toml` получает новые значения для IDE автоматически,
 сохраняя твой список `terminal_classes`. После обновления выполни
@@ -330,7 +331,9 @@ uv run python -m voicetype.cleanup --text "ну ээ ребейз"  # тольк
   интерпретатор.
 - **Codex пишет `Failed to paste image`** — проверь сочетание вставки текста.
   Классы IDE задаются в `[inject].terminal_editor_classes`, отдельных терминалов —
-  в `[inject].terminal_classes`. Для неопознанного терминала задай
+  в `[inject].terminal_classes`. Старые версии пропускали класс
+  `com.microsoft.VSCode` и отправляли `Ctrl+V`; обнови и перезапусти VoiceType.
+  Для неопознанного терминала задай
   `paste_shortcut = "ctrl+shift+v"` и перезапусти приложение.
 - **Текст вставляется не в то окно** — начинай диктовку с фокусом в нужном окне.
   Проверь цель и выбранное сочетание в `./bin/voicetype logs`.
@@ -345,14 +348,15 @@ uv pip install --python .venv/bin/python -e '.[test]'
 Тесты проверяют выбор сочетания для терминалов, IDE и браузеров, явные настройки,
 совместимость со старым конфигом, восстановление буфера, неизвестное целевое окно
 и посимвольный режим. Проверки X11 поднимают отдельный дисплей Xvfb и используют
-настоящие события XTEST и передачу Unicode через буфер между клиентами Tk.
-Тест настоящего `xfce4-terminal` проверяет UTF-8 и многострочный текст внутри
-bracketed paste, без дополнительного нажатия Enter.
+настоящие события XTEST и передачу Unicode через буфер между клиентами Tk,
+включая класс `com.microsoft.VSCode`. Тесты настоящего `xfce4-terminal` проверяют
+UTF-8 и многострочный текст внутри bracketed paste без дополнительного нажатия
+Enter, напрямую и через отдельную сессию tmux.
 
 Для всех интеграционных проверок на Ubuntu установи необязательные инструменты:
 
 ```bash
-sudo apt install xvfb xfce4-terminal xfwm4 dbus-x11
+sudo apt install xvfb xfce4-terminal xfwm4 dbus-x11 tmux
 .venv/bin/python -m pytest
 ```
 

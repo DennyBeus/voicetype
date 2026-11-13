@@ -27,7 +27,8 @@ FOCUS_SETTLE_S = 0.15
 # Отдельный список: добавляется и к старым config.toml, где terminal_classes
 # уже задан. Совпадение точное, иначе «code» поймает посторонние приложения.
 TERMINAL_EDITOR_CLASSES = (
-    "code", "code-oss", "code - insiders", "vscodium", "cursor", "windsurf",
+    "code", "com.microsoft.vscode", "code-oss", "code - insiders",
+    "vscodium", "cursor", "windsurf",
 )
 
 

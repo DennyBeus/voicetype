@@ -8,7 +8,8 @@ from voicetype.inject import InjectError, Injector
 
 @pytest.mark.x11
 @pytest.mark.parametrize("wm_class,is_terminal", [
-    ("Code", True), ("Gnome-terminal", True), ("Firefox", False),
+    ("Code", True), ("com.microsoft.VSCode", True),
+    ("Gnome-terminal", True), ("Firefox", False),
 ])
 def test_x11_text_paste_and_clipboard_restore(x11_display, monkeypatch, wm_class, is_terminal):
     monkeypatch.setenv("DISPLAY", x11_display)

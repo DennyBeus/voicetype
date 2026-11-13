@@ -13,12 +13,15 @@ from voicetype.inject import Injector
 
 
 @pytest.mark.x11
+@pytest.mark.parametrize("use_tmux", [False, True], ids=["direct", "tmux"])
 def test_real_terminal_receives_bracketed_utf8_paste(
-    x11_display, x11_window_manager, monkeypatch, tmp_path,
+    x11_display, x11_window_manager, monkeypatch, tmp_path, use_tmux,
 ):
     """Read terminal input without running a shell command or submitting a prompt."""
     if not all(shutil.which(tool) for tool in ("xfce4-terminal", "dbus-run-session")):
         pytest.skip("xfce4-terminal and dbus-run-session are required")
+    if use_tmux and not shutil.which("tmux"):
+        pytest.skip("tmux is required for the tmux terminal test")
     monkeypatch.setenv("DISPLAY", x11_display)
     config_dir = tmp_path / "config"
     terminal_config = config_dir / "xfce4" / "terminal" / "terminalrc"
@@ -41,9 +44,17 @@ def test_real_terminal_receives_bracketed_utf8_paste(
         "        pathlib.Path(sys.argv[2]).write_bytes(data)\n",
         encoding="utf-8",
     )
+    command = [sys.executable, str(reader), str(ready), str(output)]
+    tmux_socket = str(tmp_path / "tmux.sock")
+    if use_tmux:
+        command = ["tmux", "-S", tmux_socket, "-f", "/dev/null",
+                   "new-session", "-s", "paste-test", *command]
+    env = os.environ.copy()
+    env.pop("TMUX", None)
+    env.pop("TMUX_PANE", None)
     process = subprocess.Popen(
         ["dbus-run-session", "--", "xfce4-terminal", "--disable-server", "--execute",
-         sys.executable, str(reader), str(ready), str(output)],
+         *command], env=env,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
     )
     root = tk.Tk(screenName=x11_display)
@@ -55,14 +66,22 @@ def test_real_terminal_receives_bracketed_utf8_paste(
             root.update()
             time.sleep(0.01)
         assert ready.exists(), "terminal input reader did not start"
-        clients = injector._root.get_full_property(
-            injector._d.intern_atom("_NET_CLIENT_LIST"), Xatom.WINDOW,
-        )
-        assert clients is not None
-        windows = [injector._d.create_resource_object("window", int(wid)) for wid in clients.value]
-        window = next(win for win in windows if win.get_attributes().map_state == X.IsViewable
-                      and win.get_wm_class() and
-                      "xfce4-terminal" in win.get_wm_class()[1].lower())
+        window = None
+        deadline = time.monotonic() + 5
+        while window is None and time.monotonic() < deadline:
+            clients = injector._root.get_full_property(
+                injector._d.intern_atom("_NET_CLIENT_LIST"), Xatom.WINDOW,
+            )
+            if clients is not None:
+                windows = [injector._d.create_resource_object("window", int(wid))
+                           for wid in clients.value]
+                window = next((win for win in windows
+                               if win.get_attributes().map_state == X.IsViewable
+                               and win.get_wm_class()
+                               and "xfce4-terminal" in win.get_wm_class()[1].lower()), None)
+            root.update()
+            time.sleep(0.01)
+        assert window is not None, "terminal window was not managed"
         injector._root.change_property(injector._net_active, Xatom.WINDOW, 32, [window.id])
         injector._d.sync()
         target = injector.snapshot()
@@ -77,6 +96,11 @@ def test_real_terminal_receives_bracketed_utf8_paste(
     finally:
         injector._d.close()
         root.destroy()
+        if use_tmux:
+            subprocess.run(
+                ["tmux", "-S", tmux_socket, "kill-server"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5,
+            )
         if process.poll() is None:
             os.killpg(process.pid, signal.SIGTERM)
         process.wait(timeout=5)
