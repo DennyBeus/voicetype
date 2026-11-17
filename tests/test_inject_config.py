@@ -15,6 +15,7 @@ def test_existing_config_gets_new_ide_defaults(tmp_path, monkeypatch):
     assert cfg.inject["paste_shortcut"] == "auto"
     assert "code" in cfg.inject["terminal_editor_classes"]
     assert "com.microsoft.vscode" in cfg.inject["terminal_editor_classes"]
+    assert "canvastty" in cfg.inject["terminal_editor_classes"]
 
 
 def test_explicit_editor_opt_out_survives_config_merge(tmp_path, monkeypatch):

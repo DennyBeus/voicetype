@@ -29,6 +29,7 @@ FOCUS_SETTLE_S = 0.15
 TERMINAL_EDITOR_CLASSES = (
     "code", "com.microsoft.vscode", "code-oss", "code - insiders",
     "vscodium", "cursor", "windsurf",
+    "canvastty",
 )
 
 
@@ -105,7 +106,7 @@ class Injector:
         Сравниваем по вхождению, а не по равенству: один и тот же терминал
         зовётся то `Gnome-terminal`, то `gnome-terminal-server`, то
         `org.wezfurlong.wezterm` — точный список тут не собрать.
-        IDE сопоставляем точно: их класс относится ко всему окну,
+        IDE и CanvasTTY сопоставляем точно: их класс относится ко всему окну,
         включая встроенный терминал.
         """
         cls = wm_class.lower()

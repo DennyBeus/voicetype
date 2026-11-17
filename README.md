@@ -208,10 +208,15 @@ and [Codex image inputs](https://learn.chatgpt.com/docs/image-inputs?surface=cli
 
 Automatic detection now includes VS Code, Code OSS, Code Insiders, VSCodium,
 Cursor, and Windsurf, including VS Code's `com.microsoft.VSCode` window class.
-These IDE windows receive `Ctrl+Shift+V`, like known
+CanvasTTY (`WM_CLASS=CanvasTTY`) is also recognized automatically. These windows
+receive `Ctrl+Shift+V`, like known
 standalone terminals. Other applications retain `Ctrl+V`. Existing
 `config.toml` files inherit the new IDE defaults without replacing your
 `terminal_classes` list. Restart after updating: `./bin/voicetype restart`.
+
+In CanvasTTY, focus the terminal inside the agent card before dictating. Keep
+its terminal paste binding set to `Ctrl+Shift+V`, or set `paste_shortcut` below
+to match your binding.
 
 The IDE match uses the whole window's `WM_CLASS`; VoiceType cannot distinguish
 an editor pane from an integrated terminal. Keep the terminal focused when

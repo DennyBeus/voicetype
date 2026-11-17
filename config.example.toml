@@ -55,13 +55,14 @@ terminal_classes = [
     "gnome-terminal", "konsole", "kitty", "alacritty", "wezterm",
     "xterm", "terminator", "ghostty", "tilix", "xfce4-terminal",
 ]
-# IDE со встроенным терминалом: точное совпадение WM_CLASS без учёта регистра.
+# IDE и CanvasTTY: точное совпадение WM_CLASS без учёта регистра.
 # В Codex CLI Ctrl+V вызывает вставку картинки; текст вставляет сам терминал
 # через Ctrl+Shift+V. Перед диктовкой поставь курсор во встроенный терминал.
 # Класс относится ко всему окну IDE, включая редактор. [] отключает этот список.
 terminal_editor_classes = [
     "code", "com.microsoft.vscode", "code-oss", "code - insiders",
     "vscodium", "cursor", "windsurf",
+    "canvastty",
 ]
 
 [ui]
